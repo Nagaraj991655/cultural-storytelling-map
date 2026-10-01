@@ -3,29 +3,73 @@ pipeline {
 
     stages {
 
-        stage('Deploy') {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Stop Old Containers') {
             steps {
                 sh '''
-                echo "Stopping existing containers..."
+                echo "Stopping old containers..."
+
                 docker compose down --remove-orphans || true
 
-                echo "Removing any container using port 8000..."
                 docker ps -q --filter publish=8000 | xargs -r docker rm -f
-
-                echo "Removing any container using port 3000..."
                 docker ps -q --filter publish=3000 | xargs -r docker rm -f
-
-                echo "Building application..."
-                docker compose build
-
-                echo "Starting application..."
-                docker compose up -d
-
-                echo "Deployment completed successfully."
-                docker ps
                 '''
             }
         }
 
+        stage('Build Docker Images') {
+            steps {
+                sh '''
+                echo "Building Docker images..."
+                docker compose build
+                '''
+            }
+        }
+
+        stage('Deploy Application') {
+            steps {
+                sh '''
+                echo "Starting containers..."
+                docker compose up -d
+                '''
+            }
+        }
+
+        stage('Verify Deployment') {
+            steps {
+                sh '''
+                echo "Running Containers:"
+                docker ps
+
+                echo "Docker Compose Status:"
+                docker compose ps
+                '''
+            }
+        }
+    }
+
+    post {
+        success {
+            echo '✅ Deployment Successful'
+        }
+
+        failure {
+            echo '❌ Deployment Failed'
+
+            sh '''
+            docker ps -a || true
+
+            echo "===== Backend Logs ====="
+            docker compose logs backend --tail=50 || true
+
+            echo "===== Frontend Logs ====="
+            docker compose logs frontend --tail=50 || true
+            '''
+        }
     }
 }
