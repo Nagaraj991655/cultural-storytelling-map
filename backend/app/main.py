@@ -46,7 +46,7 @@ app.add_middleware(
     # allows the local frontend during development, including CRA fallback ports
     allow_origins=[
         "http://localhost:3000", "http://localhost:3001",
-        "http://127.0.0.1:3000", "http://127.0.0.1:3001",
+        "http://127.0.0.1:3000", "http://127.0.0.1:3001", "http://100.31.72.236:3000",
     ],
     allow_credentials=True,
     allow_methods=["*"],
